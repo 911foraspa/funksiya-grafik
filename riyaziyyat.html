@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Funksiya Analizi</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.11.0/math.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;700;800&display=swap');
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --border: #1e1e2e;
+    --accent: #00e5ff;
+    --accent2: #ff4d6d;
+    --accent3: #b8ff57;
+    --text: #e8e8f0;
+    --muted: #55556a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(ellipse at 20% 20%, rgba(0,229,255,0.04) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(255,77,109,0.04) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 900px;
+    position: relative;
+    z-index: 1;
+  }
+
+  header {
+    margin-bottom: 40px;
+    animation: fadeDown 0.6s ease both;
+  }
+
+  .tag {
+    font-size: 11px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 10px;
+    opacity: 0.8;
+  }
+
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(28px, 5vw, 48px);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -1px;
+  }
+
+  h1 span { color: var(--accent); }
+
+  .subtitle {
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .input-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+    animation: fadeUp 0.6s 0.1s ease both;
+  }
+
+  .input-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .input-label {
+    font-size: 13px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .input-label span {
+    color: var(--accent);
+    font-weight: 700;
+  }
+
+  input[type="text"] {
+    flex: 1;
+    min-width: 200px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 16px;
+    padding: 12px 16px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  input[type="text"]:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(0,229,255,0.08);
+  }
+
+  .range-row {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .range-input {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .range-input label {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .range-input input {
+    width: 80px;
+    min-width: unset;
+    flex: unset;
+    font-size: 14px;
+    padding: 8px 12px;
+    text-align: center;
+  }
+
+  .btn {
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    border-radius: 8px;
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 12px 24px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .btn:hover {
+    background: #33eaff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(0,229,255,0.3);
+  }
+
+  .btn:active { transform: translateY(0); }
+
+  .examples {
+    margin-top: 14px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .example-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    padding: 5px 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .example-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(0,229,255,0.05);
+  }
+
+  .canvas-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 24px;
+    animation: fadeUp 0.6s 0.2s ease both;
+    position: relative;
+  }
+
+  .canvas-header {
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .canvas-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .legend {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .legend-dot {
+    width: 20px;
+    height: 2px;
+    border-radius: 2px;
+  }
+
+  canvas {
+    display: block;
+    width: 100%;
+    cursor: crosshair;
+  }
+
+  .results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+    animation: fadeUp 0.6s 0.3s ease both;
+  }
+
+  .result-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    transition: border-color 0.2s;
+  }
+
+  .result-card:hover { border-color: var(--border); }
+
+  .result-card.func { border-left: 3px solid var(--accent); }
+  .result-card.deriv { border-left: 3px solid var(--accent2); }
+  .result-card.integ { border-left: 3px solid var(--accent3); }
+
+  .result-label {
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .result-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    word-break: break-all;
+    line-height: 1.3;
+  }
+
+  .result-card.func .result-value { color: var(--accent); }
+  .result-card.deriv .result-value { color: var(--accent2); }
+  .result-card.integ .result-value { color: var(--accent3); }
+
+  .result-sub {
+    margin-top: 6px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .error-msg {
+    background: rgba(255,77,109,0.1);
+    border: 1px solid rgba(255,77,109,0.3);
+    border-radius: 8px;
+    padding: 12px 16px;
+    color: var(--accent2);
+    font-size: 13px;
+    margin-top: 12px;
+    display: none;
+  }
+
+  .tooltip {
+    position: absolute;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 12px;
+    color: var(--text);
+    pointer-events: none;
+    display: none;
+    z-index: 10;
+    white-space: nowrap;
+  }
+
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="tag">Riyaziyyat Aləti</div>
+    <h1>Funksiya <span>Analizi</span></h1>
+    <p class="subtitle">Qrafik · Törəmə · İnteqral</p>
+  </header>
+
+  <div class="input-section">
+    <div class="input-row">
+      <span class="input-label"><span>f(x)</span> =</span>
+      <input type="text" id="funcInput" placeholder="sin(x) + x^2 / 3" value="sin(x)">
+      <button class="btn" onclick="analyze()">Analiz Et</button>
+    </div>
+    <div class="range-row">
+      <div class="range-input">
+        <label>x min:</label>
+        <input type="text" id="xMin" value="-10">
+      </div>
+      <div class="range-input">
+        <label>x max:</label>
+        <input type="text" id="xMax" value="10">
+      </div>
+      <div class="range-input">
+        <label>İnteqral [a,b]:</label>
+        <input type="text" id="intA" value="0">
+        <span style="color:var(--muted);font-size:13px">→</span>
+        <input type="text" id="intB" value="3.14">
+      </div>
+    </div>
+    <div class="examples">
+      <span style="font-size:11px;color:var(--muted);align-self:center">Nümunələr:</span>
+      <button class="example-btn" onclick="setExample('sin(x)')">sin(x)</button>
+      <button class="example-btn" onclick="setExample('x^2 - 4')">x² - 4</button>
+      <button class="example-btn" onclick="setExample('cos(x) * x')">cos(x)·x</button>
+      <button class="example-btn" onclick="setExample('sqrt(abs(x))')">√|x|</button>
+      <button class="example-btn" onclick="setExample('1/(1+x^2)')">1/(1+x²)</button>
+      <button class="example-btn" onclick="setExample('x^3 - 3*x')">x³ - 3x</button>
+    </div>
+    <div class="error-msg" id="errorMsg"></div>
+  </div>
+
+  <div class="canvas-section">
+    <div class="canvas-header">
+      <span class="canvas-title">Qrafik</span>
+      <div class="legend">
+        <div class="legend-item">
+          <div class="legend-dot" style="background:var(--accent)"></div>
+          <span>f(x)</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:var(--accent2)"></div>
+          <span>f'(x) — törəmə</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:var(--accent3);opacity:0.7"></div>
+          <span>İnteqral sahəsi</span>
+        </div>
+      </div>
+    </div>
+    <canvas id="graph" height="420"></canvas>
+    <div class="tooltip" id="tooltip"></div>
+  </div>
+
+  <div class="results-grid">
+    <div class="result-card func">
+      <div class="result-label">Funksiya</div>
+      <div class="result-value" id="resFunc">—</div>
+      <div class="result-sub" id="resFuncVal">x dəyərini seçin</div>
+    </div>
+    <div class="result-card deriv">
+      <div class="result-label">Törəmə f'(x)</div>
+      <div class="result-value" id="resDeriv">—</div>
+      <div class="result-sub" id="resDerivVal">x dəyərini seçin</div>
+    </div>
+    <div class="result-card integ">
+      <div class="result-label">Müəyyən İnteqral</div>
+      <div class="result-value" id="resInteg">—</div>
+      <div class="result-sub" id="resIntegSub">a-dan b-yə qədər sahə</div>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentFunc = null;
+let currentDeriv = null;
+let xMinVal = -10, xMaxVal = 10;
+let intAVal = 0, intBVal = Math.PI;
+
+function setExample(ex) {
+  document.getElementById('funcInput').value = ex;
+  analyze();
+}
+
+function showError(msg) {
+  const el = document.getElementById('errorMsg');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function hideError() {
+  document.getElementById('errorMsg').style.display = 'none';
+}
+
+function analyze() {
+  hideError();
+  const expr = document.getElementById('funcInput').value.trim();
+  xMinVal = parseFloat(document.getElementById('xMin').value) || -10;
+  xMaxVal = parseFloat(document.getElementById('xMax').value) || 10;
+  intAVal = parseFloat(document.getElementById('intA').value) || 0;
+  intBVal = parseFloat(document.getElementById('intB').value) || Math.PI;
+
+  if (!expr) return;
+
+  try {
+    const compiled = math.compile(expr);
+    currentFunc = (x) => {
+      try { return compiled.evaluate({ x }); } catch { return NaN; }
+    };
+
+    // Derivative using numerical differentiation
+    const h = 1e-7;
+    currentDeriv = (x) => (currentFunc(x + h) - currentFunc(x - h)) / (2 * h);
+
+    // Compute derivative expression symbolically
+    try {
+      const derivExpr = math.derivative(expr, 'x').toString();
+      document.getElementById('resDeriv').textContent = "f'(x) = " + derivExpr;
+    } catch {
+      document.getElementById('resDeriv').textContent = "Rəqəmsal törəmə";
+    }
+
+    document.getElementById('resFunc').textContent = "f(x) = " + expr;
+
+    // Compute integral numerically (Simpson's rule)
+    const integVal = simpsonIntegral(currentFunc, intAVal, intBVal, 1000);
+    document.getElementById('resInteg').textContent = integVal.toFixed(6);
+    document.getElementById('resIntegSub').textContent = `[${intAVal}, ${intBVal}] aralığında sahə`;
+
+    drawGraph();
+  } catch(e) {
+    showError("Xəta: Düzgün funksiya daxil edin. Məs: sin(x), x^2 + 3");
+  }
+}
+
+function simpsonIntegral(f, a, b, n) {
+  if (n % 2 !== 0) n++;
+  const h = (b - a) / n;
+  let sum = f(a) + f(b);
+  for (let i = 1; i < n; i++) {
+    sum += (i % 2 === 0 ? 2 : 4) * (f(a + i * h) || 0);
+  }
+  return (h / 3) * sum;
+}
+
+function drawGraph() {
+  const canvas = document.getElementById('graph');
+  const dpr = window.devicePixelRatio || 1;
+  const W = canvas.offsetWidth;
+  const H = 420;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  const pad = { top: 30, right: 30, bottom: 40, left: 55 };
+  const gW = W - pad.left - pad.right;
+  const gH = H - pad.top - pad.bottom;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Compute y range
+  const steps = 600;
+  const xs = Array.from({length: steps}, (_, i) => xMinVal + (xMaxVal - xMinVal) * i / (steps-1));
+  const ys = xs.map(x => currentFunc(x));
+  const dys = xs.map(x => currentDeriv(x));
+
+  const allY = [...ys, ...dys].filter(y => isFinite(y) && !isNaN(y));
+  let yMin = Math.min(...allY);
+  let yMax = Math.max(...allY);
+  const yPad = (yMax - yMin) * 0.12 || 1;
+  yMin -= yPad; yMax += yPad;
+  if (yMin === yMax) { yMin -= 1; yMax += 1; }
+
+  const toX = (x) => pad.left + (x - xMinVal) / (xMaxVal - xMinVal) * gW;
+  const toY = (y) => pad.top + (1 - (y - yMin) / (yMax - yMin)) * gH;
+
+  // Background grid
+  ctx.strokeStyle = 'rgba(30,30,46,1)';
+  ctx.lineWidth = 1;
+  const xTicks = 10, yTicks = 8;
+  for (let i = 0; i <= xTicks; i++) {
+    const x = pad.left + gW * i / xTicks;
+    ctx.beginPath(); ctx.moveTo(x, pad.top); ctx.lineTo(x, pad.top + gH); ctx.stroke();
+  }
+  for (let i = 0; i <= yTicks; i++) {
+    const y = pad.top + gH * i / yTicks;
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + gW, y); ctx.stroke();
+  }
+
+  // Axes
+  const x0 = toX(0), y0 = toY(0);
+  ctx.strokeStyle = 'rgba(85,85,106,0.6)';
+  ctx.lineWidth = 1;
+  if (x0 >= pad.left && x0 <= pad.left + gW) {
+    ctx.beginPath(); ctx.moveTo(x0, pad.top); ctx.lineTo(x0, pad.top + gH); ctx.stroke();
+  }
+  if (y0 >= pad.top && y0 <= pad.top + gH) {
+    ctx.beginPath(); ctx.moveTo(pad.left, y0); ctx.lineTo(pad.left + gW, y0); ctx.stroke();
+  }
+
+  // Axis labels
+  ctx.fillStyle = '#55556a';
+  ctx.font = '11px Space Mono, monospace';
+  ctx.textAlign = 'center';
+  for (let i = 0; i <= xTicks; i++) {
+    const xVal = xMinVal + (xMaxVal - xMinVal) * i / xTicks;
+    const px = pad.left + gW * i / xTicks;
+    ctx.fillText(xVal.toFixed(1), px, pad.top + gH + 20);
+  }
+  ctx.textAlign = 'right';
+  for (let i = 0; i <= yTicks; i++) {
+    const yVal = yMax - (yMax - yMin) * i / yTicks;
+    const py = pad.top + gH * i / yTicks;
+    ctx.fillText(yVal.toFixed(1), pad.left - 8, py + 4);
+  }
+
+  // Integral area
+  const aX = Math.max(xMinVal, intAVal), bX = Math.min(xMaxVal, intBVal);
+  if (aX < bX) {
+    ctx.beginPath();
+    const startX = toX(aX);
+    ctx.moveTo(startX, toY(0));
+    for (let i = 0; i <= 300; i++) {
+      const xv = aX + (bX - aX) * i / 300;
+      const yv = currentFunc(xv);
+      if (isFinite(yv)) ctx.lineTo(toX(xv), toY(yv));
+    }
+    ctx.lineTo(toX(bX), toY(0));
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(184,255,87,0.12)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(184,255,87,0.4)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  // Draw derivative
+  ctx.beginPath();
+  ctx.strokeStyle = '#ff4d6d';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([4, 4]);
+  let derivStarted = false;
+  for (let i = 0; i < steps; i++) {
+    const px = toX(xs[i]), py = toY(dys[i]);
+    if (!isFinite(dys[i]) || py < pad.top - 20 || py > pad.top + gH + 20) {
+      derivStarted = false; continue;
+    }
+    if (!derivStarted) { ctx.moveTo(px, py); derivStarted = true; }
+    else ctx.lineTo(px, py);
+  }
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Draw function
+  ctx.beginPath();
+  ctx.strokeStyle = '#00e5ff';
+  ctx.lineWidth = 2.5;
+  ctx.shadowColor = 'rgba(0,229,255,0.4)';
+  ctx.shadowBlur = 8;
+  let started = false;
+  for (let i = 0; i < steps; i++) {
+    const px = toX(xs[i]), py = toY(ys[i]);
+    if (!isFinite(ys[i]) || py < pad.top - 20 || py > pad.top + gH + 20) {
+      started = false; continue;
+    }
+    if (!started) { ctx.moveTo(px, py); started = true; }
+    else ctx.lineTo(px, py);
+  }
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  // Axis labels
+  ctx.fillStyle = '#55556a';
+  ctx.font = 'italic 13px Space Mono, monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('x', pad.left + gW + 6, y0 + 4);
+  ctx.fillText('y', x0 + 6, pad.top - 8);
+}
+
+// Mouse hover tooltip
+document.getElementById('graph').addEventListener('mousemove', function(e) {
+  if (!currentFunc) return;
+  const canvas = this;
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const W = canvas.offsetWidth;
+  const pad = { left: 55, right: 30, top: 30, bottom: 40 };
+  const gW = W - pad.left - pad.right;
+  if (mx < pad.left || mx > pad.left + gW) {
+    document.getElementById('tooltip').style.display = 'none';
+    return;
+  }
+  const xVal = xMinVal + (mx - pad.left) / gW * (xMaxVal - xMinVal);
+  const yVal = currentFunc(xVal);
+  const dyVal = currentDeriv(xVal);
+  if (!isFinite(yVal)) return;
+
+  const tip = document.getElementById('tooltip');
+  tip.style.display = 'block';
+  tip.style.left = (mx + 12) + 'px';
+  tip.style.top = (e.clientY - rect.top - 40) + 'px';
+  tip.innerHTML = `x = ${xVal.toFixed(3)}<br>f(x) = <span style="color:#00e5ff">${yVal.toFixed(4)}</span><br>f'(x) = <span style="color:#ff4d6d">${dyVal.toFixed(4)}</span>`;
+
+  document.getElementById('resFuncVal').textContent = `x=${xVal.toFixed(3)} → f(x)=${yVal.toFixed(4)}`;
+  document.getElementById('resDerivVal').textContent = `x=${xVal.toFixed(3)} → f'(x)=${dyVal.toFixed(4)}`;
+});
+
+document.getElementById('graph').addEventListener('mouseleave', function() {
+  document.getElementById('tooltip').style.display = 'none';
+});
+
+window.addEventListener('resize', () => { if(currentFunc) drawGraph(); });
+
+// Initial
+analyze();
+</script>
+</body>
+</html>
